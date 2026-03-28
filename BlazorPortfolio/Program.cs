@@ -31,6 +31,7 @@ builder.Services.AddDataProtection()
     .SetApplicationName("BlazorPortfolio");
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
     options.Cookie.HttpOnly = true;
