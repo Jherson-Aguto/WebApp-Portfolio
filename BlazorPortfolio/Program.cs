@@ -2,13 +2,20 @@ using BlazorPortfolio.Components;
 using BlazorPortfolio.Data;
 using BlazorPortfolio.Models;
 using BlazorPortfolio.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents()
+    .AddHubOptions(options =>
+    {
+        options.EnableDetailedErrors = !builder.Environment.IsProduction();
+        options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+        options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+    });
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -18,6 +25,10 @@ builder.Services.AddAntiforgery(options =>
 
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<AppDbContext>()
+    .SetApplicationName("BlazorPortfolio");
 
 builder.Services.AddScoped<ContentService>();
 builder.Services.AddScoped<AdminAuthService>();
