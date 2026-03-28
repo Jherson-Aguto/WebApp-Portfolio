@@ -1,18 +1,30 @@
 namespace BlazorPortfolio.Services;
 
-public class KeepAliveService(IConfiguration config, ILogger<KeepAliveService> logger) : IHostedService, IDisposable
+public class KeepAliveService : IHostedService, IDisposable
 {
-    private readonly HttpClient _http = new();
+    private readonly HttpClient _http;
+    private readonly ILogger<KeepAliveService> _logger;
+    private readonly string? _baseUrl;
+    private readonly TimeSpan _interval;
     private Timer? _timer;
-    private readonly string? _baseUrl = config["KeepAlive:BaseUrl"];
-    private readonly TimeSpan _interval = TimeSpan.FromMinutes(
-        double.TryParse(config["KeepAlive:IntervalMinutes"], out var m) ? m : 10);
+
+    public KeepAliveService(IConfiguration config, ILogger<KeepAliveService> logger)
+        : this(config, logger, new HttpClient()) { }
+
+    public KeepAliveService(IConfiguration config, ILogger<KeepAliveService> logger, HttpClient httpClient)
+    {
+        _logger = logger;
+        _http = httpClient;
+        _baseUrl = config["KeepAlive:BaseUrl"];
+        _interval = TimeSpan.FromMinutes(
+            double.TryParse(config["KeepAlive:IntervalMinutes"], out var m) && m >= 10 ? m : 10);
+    }
 
     public Task StartAsync(CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(_baseUrl))
         {
-            logger.LogWarning("KeepAlive:BaseUrl is not configured. Keep-alive pings are disabled.");
+            _logger.LogWarning("KeepAlive:BaseUrl is not configured. Keep-alive pings are disabled.");
             return Task.CompletedTask;
         }
         _timer = new Timer(Ping, null, _interval, _interval);
@@ -29,11 +41,11 @@ public class KeepAliveService(IConfiguration config, ILogger<KeepAliveService> l
         {
             var resp = await _http.GetAsync(_baseUrl);
             if (!resp.IsSuccessStatusCode)
-                logger.LogWarning("Keep-alive ping returned {Status}", resp.StatusCode);
+                _logger.LogWarning("Keep-alive ping returned {Status}", resp.StatusCode);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Keep-alive ping failed");
+            _logger.LogWarning(ex, "Keep-alive ping failed");
         }
     }
 

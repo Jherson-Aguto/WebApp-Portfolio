@@ -10,7 +10,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<ContentService>();
 builder.Services.AddScoped<AdminAuthService>();
@@ -21,11 +21,32 @@ builder.Services.AddHostedService<KeepAliveService>();
 
 var app = builder.Build();
 
+// Warn on missing required secrets
+var requiredSecrets = new[]
+{
+    "Admin__Username", "Admin__Password",
+    "GitHub__Token", "Resend__ApiKey"
+};
+foreach (var key in requiredSecrets)
+{
+    if (string.IsNullOrWhiteSpace(app.Configuration[key.Replace("__", ":")]))
+        app.Logger.LogWarning("Required environment variable '{Key}' is not set.", key);
+}
+
 // Auto-migrate on startup and seed default admin if none exists
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogCritical(ex, "Failed to apply migrations. Persistent volume may be unavailable. Exiting.");
+        Environment.Exit(1);
+    }
 
     if (!db.AdminUsers.Any())
     {
@@ -51,4 +72,9 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+app.MapGet("/health", () => Results.Ok("OK"));
+
 app.Run();
+
+// Make Program class accessible for WebApplicationFactory in tests
+public partial class Program { }
