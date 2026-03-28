@@ -8,6 +8,10 @@ obj/
 *.db-shm
 *.db-wal
 
+## Secrets
+BlazorPortfolio/appsettings.json
+BlazorPortfolio/appsettings.*.json
+
 ## Kiro
 .kiro/
 
