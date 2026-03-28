@@ -9,15 +9,20 @@
 else
 {
     <div class="admin-shell">
-        <nav class="admin-sidebar">
-            <div class="admin-brand">⚙️ CMS</div>
-            <NavLink href="/admin" Match="NavLinkMatch.All">Dashboard</NavLink>
-            <NavLink href="/admin/experiences">Experiences</NavLink>
-            <NavLink href="/admin/skills">Skills</NavLink>
-            <NavLink href="/admin/projects">Projects</NavLink>
-            <NavLink href="/admin/messages">Messages</NavLink>
-            <NavLink href="/admin/profile">Profile</NavLink>
-            <button class="logout-btn" @onclick="Logout">Logout</button>
+        <nav class="admin-sidebar @(sidebarOpen ? "sidebar-open" : "")">
+            <div class="admin-sidebar-top">
+                <div class="admin-brand">⚙️ CMS</div>
+                <button class="sidebar-toggle" @onclick="ToggleSidebar" aria-label="Toggle sidebar">☰</button>
+            </div>
+            <div class="admin-sidebar-links">
+                <NavLink href="/admin" Match="NavLinkMatch.All" @onclick="CloseSidebar">Dashboard</NavLink>
+                <NavLink href="/admin/experiences" @onclick="CloseSidebar">Experiences</NavLink>
+                <NavLink href="/admin/skills" @onclick="CloseSidebar">Skills</NavLink>
+                <NavLink href="/admin/projects" @onclick="CloseSidebar">Projects</NavLink>
+                <NavLink href="/admin/messages" @onclick="CloseSidebar">Messages</NavLink>
+                <NavLink href="/admin/profile" @onclick="CloseSidebar">Profile</NavLink>
+                <button class="logout-btn" @onclick="Logout">Logout</button>
+            </div>
         </nav>
         <main class="admin-content">
             @Body
@@ -26,6 +31,10 @@ else
 }
 
 @code {
+    bool sidebarOpen;
+    void ToggleSidebar() => sidebarOpen = !sidebarOpen;
+    void CloseSidebar() => sidebarOpen = false;
+
     void Logout()
     {
         Auth.Logout();

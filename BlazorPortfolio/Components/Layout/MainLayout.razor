@@ -5,12 +5,15 @@
         <a href="/" class="brand">
             <span class="brand-dot"></span>Portfolio
         </a>
-        <nav class="header-nav">
-            <a href="/#about">About</a>
-            <a href="/#experience">Experience</a>
-            <a href="/#skills">Skills</a>
-            <a href="/#projects">Projects</a>
-            <a href="/#contact" class="nav-cta">Contact</a>
+        <button class="nav-toggle" @onclick="ToggleMenu" aria-label="Toggle navigation" aria-expanded="@menuOpen">
+            <span></span><span></span><span></span>
+        </button>
+        <nav class="header-nav @(menuOpen ? "nav-open" : "")">
+            <a href="/#about" @onclick="CloseMenu">About</a>
+            <a href="/#experience" @onclick="CloseMenu">Experience</a>
+            <a href="/#skills" @onclick="CloseMenu">Skills</a>
+            <a href="/#projects" @onclick="CloseMenu">Projects</a>
+            <a href="/#contact" class="nav-cta" @onclick="CloseMenu">Contact</a>
         </nav>
     </div>
 </header>
@@ -18,3 +21,9 @@
 <main>
     @Body
 </main>
+
+@code {
+    bool menuOpen;
+    void ToggleMenu() => menuOpen = !menuOpen;
+    void CloseMenu() => menuOpen = false;
+}
