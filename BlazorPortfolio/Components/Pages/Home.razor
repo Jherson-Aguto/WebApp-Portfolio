@@ -29,7 +29,7 @@
         </div>
         <div class="hero-avatar">
             <div class="avatar-ring">
-                @if (!string.IsNullOrEmpty(profile?.AvatarUrl))
+                @if (!string.IsNullOrEmpty(profile?.AvatarUrl) && !profile.AvatarUrl.StartsWith("/uploads/"))
                 {
                     <img class="avatar-img" src="@profile.AvatarUrl" alt="@profile.OwnerName" />
                 }

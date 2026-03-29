@@ -15,6 +15,7 @@ builder.Services.AddRazorComponents()
         options.EnableDetailedErrors = true;
         options.HandshakeTimeout = TimeSpan.FromSeconds(15);
         options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+        options.MaximumReceiveMessageSize = 512 * 1024; // 512 KB — GitHub data can be large
     });
 
 builder.Services.AddAntiforgery(options =>

@@ -1,0 +1,134 @@
+@rendermode InteractiveServer
+
+@if (constellations.Count > 0)
+{
+    <section class="section" id="skills">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">What I Know</span>
+                <h2>Tech Stack</h2>
+                <p>Click a system to explore its constellation.</p>
+            </div>
+            <div class="constellation-legend">
+                @foreach (var sys in constellations)
+                {
+                    var s = sys;
+                    <span class="cl-item @(activeSystem == s.Name ? "cl-active" : "")"
+                          style="@(activeSystem == s.Name ? $"border-color:{s.Color};color:{s.Color}" : "")"
+                          @onclick="() => SetSystem(s.Name)">
+                        <span class="cl-dot" style="background:@s.Color"></span>
+                        @s.Name
+                    </span>
+                }
+            </div>
+            @{
+                var active = constellations.FirstOrDefault(c => c.Name == activeSystem) ?? constellations[0];
+            }
+            <div class="constellation-canvas" id="constellation-canvas">
+                <canvas id="constellation-bg"
+                        data-edges="@System.Text.Json.JsonSerializer.Serialize(active.Edges)"
+                        data-color="@active.Color">
+                </canvas>
+                <div class="constellation-nodes">
+                    @foreach (var node in active.Nodes)
+                    {
+                        <div class="constellation-node cn-show-label"
+                             style="left:@(node.X)%;top:@(node.Y)%;--size:@(node.Size)px;--color:@active.Color"
+                             data-index="@node.Index">
+                            <div class="cn-dot"></div>
+                            <span class="cn-label @node.LabelDir">@node.Name</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired] public List<Skill> Skills { get; set; } = [];
+
+    List<ConstellationSystem> constellations = [];
+    string activeSystem = "";
+
+    record ConstellationNode(string Name, double X, double Y, int Size, int Index, string LabelDir);
+    record ConstellationEdge(int A, int B, double Weight);
+    record ConstellationSystem(string Name, string Color, List<ConstellationNode> Nodes, List<ConstellationEdge> Edges);
+
+    protected override void OnParametersSet() => BuildConstellation();
+
+    void SetSystem(string name) => activeSystem = name;
+
+    void BuildConstellation()
+    {
+        if (Skills.Count == 0) return;
+
+        var systemDefs = new List<(string Name, string Color, string[] Keywords)>
+        {
+            ("Web API",        "#00e5ff", new[]{"asp.net","web api","restful","swagger","http","endpoint","api","controller"}),
+            ("Data & Math",    "#ffd166", new[]{"sql","linq","entity framework","orm","data","algorithm","mathematical","time series","forecasting","modeling","mining"}),
+            ("C# Core",        "#a29bfe", new[]{"c#","async","await","multithreading","task","parallelism","file i/o","blazor","fundamentals"}),
+            ("Frontend",       "#fd79a8", new[]{"javascript","html","css","blazor","frontend","ui","web"}),
+            ("DevOps & Tools", "#74b9ff", new[]{"git","version control","docker","ci","cd","devops","azure","cloud","deploy"}),
+        };
+
+        var buckets = systemDefs.Select(s => (s.Name, s.Color, Items: new List<Skill>())).ToList();
+        foreach (var skill in Skills)
+        {
+            var lower = skill.Name.ToLowerInvariant();
+            int bestIdx = -1, bestScore = 0;
+            for (int si = 0; si < systemDefs.Count; si++)
+            {
+                int score = systemDefs[si].Keywords.Count(kw => lower.Contains(kw));
+                if (score > bestScore) { bestScore = score; bestIdx = si; }
+            }
+            if (bestIdx < 0)
+            {
+                var catLower = skill.Category.ToLowerInvariant();
+                for (int si = 0; si < systemDefs.Count; si++)
+                    if (systemDefs[si].Keywords.Any(kw => catLower.Contains(kw))) { bestIdx = si; break; }
+            }
+            if (bestIdx < 0) bestIdx = 0;
+            buckets[bestIdx].Items.Add(skill);
+        }
+
+        buckets = buckets.Where(b => b.Items.Count > 0).ToList();
+        if (buckets.Count == 0) return;
+
+        int maxProf = Skills.Max(s => s.Proficiency);
+
+        constellations = buckets.Select(bucket =>
+        {
+            var items = bucket.Items;
+            int n = items.Count;
+            double baseR = n <= 3 ? 22 : n <= 6 ? 28 : n <= 10 ? 33 : 38;
+            double cx = 50, cy = 50;
+            var nodes = new List<ConstellationNode>();
+
+            for (int i = 0; i < n; i++)
+            {
+                double angle = (2 * Math.PI * i / n) - Math.PI / 2;
+                double x = Math.Round(cx + baseR * Math.Cos(angle), 1);
+                double y = Math.Round(cy + baseR * Math.Sin(angle) * 0.75, 1);
+                int sz = (int)(8 + 14 * ((double)items[i].Proficiency / maxProf));
+                string dir = angle switch {
+                    var a when Math.Cos(a) > 0.5  => "cn-label-right",
+                    var a when Math.Cos(a) < -0.5 => "cn-label-left",
+                    var a when Math.Sin(a) > 0     => "cn-label-below",
+                    _                              => ""
+                };
+                nodes.Add(new ConstellationNode(items[i].Name, x, y, sz, i, dir));
+            }
+
+            var edges = new List<ConstellationEdge>();
+            for (int i = 0; i < n; i++)
+                for (int j = i + 1; j < n; j++)
+                    edges.Add(new ConstellationEdge(i, j, 0.7));
+
+            return new ConstellationSystem(bucket.Name, bucket.Color, nodes, edges);
+        }).ToList();
+
+        if (!constellations.Any(c => c.Name == activeSystem))
+            activeSystem = constellations.Count > 0 ? constellations[0].Name : "";
+    }
+}

@@ -1,0 +1,19 @@
+@rendermode InteractiveServer
+@inject GitHubService GitHub
+@inject CacheService Cache
+
+@if (!string.IsNullOrWhiteSpace(GitHubUsername))
+{
+    <section class="section alt" id="github">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Open Source</span>
+                <h2>GitHub</h2>
+            </div>
+
+            @if (ghProfile is not null)
+            {
+                <div class="gh-banner anim-slide">
+                    @if (!string.IsNullOrEmpty(ghProfile.AvatarUrl))
+                    {
+                        <img src="@ghProfile.AvatarUrl" alt="@

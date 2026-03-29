@@ -95,7 +95,7 @@ else
 
     <div class="edit-form" style="max-width:700px;margin-top:1.5rem">
         <h3>Profile Picture</h3>
-        @if (!string.IsNullOrEmpty(profile.AvatarUrl))
+        @if (!string.IsNullOrEmpty(profile.AvatarUrl) && !profile.AvatarUrl.StartsWith("/uploads/"))
         {
             <img src="@profile.AvatarUrl" alt="Current avatar" class="avatar-preview" />
         }
