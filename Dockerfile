@@ -13,6 +13,9 @@ RUN dotnet publish BlazorPortfolio/BlazorPortfolio.csproj \
     -o /app/publish \
     --no-restore
 
+# Debug: verify _framework exists
+RUN ls /app/publish/wwwroot/_framework/
+
 # Stage 2: runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
