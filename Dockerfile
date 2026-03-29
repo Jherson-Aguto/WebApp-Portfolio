@@ -8,8 +8,6 @@ RUN dotnet publish BlazorPortfolio/BlazorPortfolio.csproj \
     -c Release \
     -o /app/publish
 
-RUN ls /app/publish/wwwroot/_framework/
-
 # Stage 2: runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app

@@ -4,17 +4,14 @@ using Microsoft.EntityFrameworkCore;
 namespace BlazorPortfolio.Services;
 
 /// <summary>
-/// Admin session backed by DB credentials (BCrypt) + a simple auth cookie
-/// so login state survives Blazor circuit reconnects.
+/// Admin session using in-memory state per circuit.
+/// HttpContext is not reliably available in Blazor Server interactive mode.
 /// </summary>
-public class AdminAuthService(
-    IDbContextFactory<AppDbContext> dbFactory,
-    IHttpContextAccessor httpContextAccessor)
+public class AdminAuthService(IDbContextFactory<AppDbContext> dbFactory)
 {
-    private const string CookieName = "admin_auth";
+    private bool _isAuthenticated;
 
-    public bool IsAuthenticated =>
-        httpContextAccessor.HttpContext?.Request.Cookies.ContainsKey(CookieName) == true;
+    public bool IsAuthenticated => _isAuthenticated;
 
     public async Task<bool> LoginAsync(string username, string password)
     {
@@ -22,20 +19,9 @@ public class AdminAuthService(
         var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Username == username);
         if (user is null) return false;
         if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash)) return false;
-
-        httpContextAccessor.HttpContext?.Response.Cookies.Append(CookieName, "1", new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Lax,
-            Expires = DateTimeOffset.UtcNow.AddHours(8)
-        });
-
+        _isAuthenticated = true;
         return true;
     }
 
-    public void Logout()
-    {
-        httpContextAccessor.HttpContext?.Response.Cookies.Delete(CookieName);
-    }
+    public void Logout() => _isAuthenticated = false;
 }

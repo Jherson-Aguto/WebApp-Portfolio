@@ -30,8 +30,6 @@ builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AppDbContext>()
     .SetApplicationName("BlazorPortfolio");
 
-builder.Services.AddHttpContextAccessor();
-
 builder.Services.AddScoped<ContentService>();
 builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddScoped<CacheService>();
