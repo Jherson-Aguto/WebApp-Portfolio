@@ -30,9 +30,11 @@
         <div class="hero-avatar">
             <div class="avatar-ring">
                 @{
-                    var avatarSrc = (!string.IsNullOrEmpty(profile?.AvatarUrl) && !profile.AvatarUrl.StartsWith("/uploads/"))
-                        ? profile.AvatarUrl
-                        : ghProfile?.AvatarUrl;
+                    var avatarSrc = !string.IsNullOrEmpty(ghProfile?.AvatarUrl)
+                        ? ghProfile!.AvatarUrl
+                        : (!string.IsNullOrEmpty(profile?.AvatarUrl) && !profile.AvatarUrl.StartsWith("/uploads/"))
+                            ? profile.AvatarUrl
+                            : null;
                 }
                 @if (!string.IsNullOrEmpty(avatarSrc))
                 {
@@ -628,7 +630,7 @@
 <footer class="site-footer">
     <div class="container footer-inner">
         <span>Designed &amp; Built by <span class="accent">@(profile?.OwnerName ?? "Your Name")</span></span>
-        <span class="footer-stack">Blazor · EF Core · SQLite</span>
+        <span class="footer-stack">Blazor · EF Core · PostgreSQL</span>
     </div>
 </footer>
 
