@@ -98,6 +98,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseWebSockets();
+app.UseStaticFiles();
 app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
