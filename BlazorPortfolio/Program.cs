@@ -49,6 +49,7 @@ builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddScoped<CacheService>();
 builder.Services.AddScoped<GitHubService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<CloudinaryService>();
 builder.Services.AddHostedService<KeepAliveService>();
 
 var app = builder.Build();

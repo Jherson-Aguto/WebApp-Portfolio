@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject ContentService Svc
 @inject CacheService Cache
+@inject CloudinaryService Cloudinary
 
 <PageTitle>Edit Profile</PageTitle>
 <h1>Profile</h1>
@@ -95,10 +96,6 @@ else
 
     <div class="edit-form" style="max-width:700px;margin-top:1.5rem">
         <h3>Profile Picture</h3>
-        <p style="color:var(--text-muted);font-size:.875rem">
-            Upload your image to <a href="https://cloudinary.com" target="_blank">Cloudinary</a> (free tier) or
-            any CDN, then paste the public URL below. This keeps your Neon DB storage lean.
-        </p>
         @if (!string.IsNullOrEmpty(uploadError))
         {
             <div class="alert-error">@uploadError</div>
@@ -110,21 +107,39 @@ else
                 <div><strong>@uploadSuccess</strong></div>
             </div>
         }
-        <div class="form-group" style="margin-top:1rem">
-            <label>Avatar URL (Cloudinary, Firebase Storage, etc.)</label>
-            <InputText @bind-Value="avatarUrlInput" class="form-control"
-                       placeholder="https://res.cloudinary.com/your-cloud/image/upload/v1/avatar.jpg" />
-        </div>
-        @if (!string.IsNullOrEmpty(avatarUrlInput))
+
+        @if (Cloudinary.IsConfigured)
         {
-            <img src="@avatarUrlInput" alt="Avatar preview" class="avatar-preview"
-                 style="margin-top:.5rem" onerror="this.style.display='none'" />
+            <!-- Direct upload to Cloudinary -->
+            <div class="form-group" style="margin-top:1rem">
+                <label>Upload Image (JPEG, PNG, WebP — max 5 MB)</label>
+                <InputFile OnChange="HandleUpload" accept="image/jpeg,image/png,image/webp"
+                           class="form-control" disabled="@uploading" />
+            </div>
+            @if (uploading)
+            {
+                <p style="color:var(--text-muted);margin-top:.5rem">⏳ Uploading to Cloudinary...</p>
+            }
         }
-        else if (!string.IsNullOrEmpty(profile.AvatarUrl))
+        else
         {
-            <img src="@profile.AvatarUrl" alt="Current avatar" class="avatar-preview" style="margin-top:.5rem" />
+            <!-- Fallback: manual URL paste -->
+            <p style="color:var(--text-muted);font-size:.875rem">
+                Cloudinary is not configured. Set <code>Cloudinary:CloudName</code>, <code>ApiKey</code>,
+                and <code>ApiSecret</code> in your environment variables, or paste a URL manually below.
+            </p>
+            <div class="form-group" style="margin-top:1rem">
+                <label>Avatar URL</label>
+                <InputText @bind-Value="avatarUrlInput" class="form-control"
+                           placeholder="https://res.cloudinary.com/your-cloud/image/upload/v1/avatar.jpg" />
+            </div>
+            <button type="button" class="btn-primary" style="margin-top:.5rem" @onclick="SaveAvatarUrl">Save URL</button>
         }
-        <button type="button" class="btn-primary" style="margin-top:1rem" @onclick="SaveAvatarUrl">Save Avatar URL</button>
+
+        @if (!string.IsNullOrEmpty(profile.AvatarUrl))
+        {
+            <img src="@profile.AvatarUrl" alt="Current avatar" class="avatar-preview" style="margin-top:1rem" />
+        }
     </div>
 }
 
@@ -135,6 +150,7 @@ else
     string? uploadError;
     string? uploadSuccess;
     string avatarUrlInput = "";
+    bool uploading;
 
     protected override async Task OnInitializedAsync()
     {
@@ -161,6 +177,49 @@ else
         await Cache.RemoveAsync(CacheService.Keys.GitHubPinned);
         await Cache.RemoveAsync(CacheService.Keys.GitHubContributions);
         successMsg = "GitHub cache cleared — data will refresh on next page load.";
+    }
+
+    async Task HandleUpload(InputFileChangeEventArgs e)
+    {
+        uploadError = null;
+        uploadSuccess = null;
+        uploading = true;
+
+        var file = e.File;
+        var allowed = new[] { "image/jpeg", "image/png", "image/webp" };
+
+        if (!allowed.Contains(file.ContentType))
+        {
+            uploadError = "Only JPEG, PNG, and WebP images are allowed.";
+            uploading = false;
+            return;
+        }
+        const long maxSize = 5 * 1024 * 1024;
+        if (file.Size > maxSize)
+        {
+            uploadError = "File must be 5 MB or smaller.";
+            uploading = false;
+            return;
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream(maxSize);
+            var url = await Cloudinary.UploadAsync(stream, file.Name);
+
+            profile!.AvatarUrl = url;
+            await Svc.SaveProfileAsync(profile);
+            await Cache.RemoveAsync(CacheService.Keys.Profile);
+            uploadSuccess = "Image uploaded to Cloudinary and saved.";
+        }
+        catch (Exception ex)
+        {
+            uploadError = $"Upload failed: {ex.Message}";
+        }
+        finally
+        {
+            uploading = false;
+        }
     }
 
     async Task SaveAvatarUrl()
