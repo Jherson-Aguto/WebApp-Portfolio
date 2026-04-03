@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0f" />
     <base href="/" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,14 +25,14 @@
         Blazor.start({
             circuit: {
                 reconnectionOptions: {
-                    maxRetries: 5,
-                    retryIntervalMilliseconds: 3000
+                    maxRetries: 8,
+                    retryIntervalMilliseconds: 4000
                 }
             }
         });
     </script>
-    <script src="js/cache.js"></script>
-    <script src="js/animations.js"></script>
+    <script src="js/cache.js" defer></script>
+    <script src="js/animations.js" defer></script>
 </body>
 
 </html>

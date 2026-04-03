@@ -5,6 +5,13 @@
     const ctx = canvas.getContext('2d');
     let stars = [];
 
+    // Reduce star density on mobile to save CPU/battery
+    const isMobile = window.innerWidth < 768;
+    const DENSITY  = isMobile ? 14000 : 6000;
+    // Target 30fps on mobile, 60fps on desktop
+    const FRAME_MS = isMobile ? 33 : 0;
+    let lastFrame  = 0;
+
     function resize() {
         canvas.width  = window.innerWidth;
         canvas.height = document.body.scrollHeight;
@@ -13,24 +20,26 @@
 
     function initStars() {
         stars = [];
-        const count = Math.floor((canvas.width * canvas.height) / 6000);
+        const count = Math.floor((canvas.width * canvas.height) / DENSITY);
         for (let i = 0; i < count; i++) {
             stars.push({
-                x:       Math.random() * canvas.width,
-                y:       Math.random() * canvas.height,
-                r:       Math.random() * 1.4 + 0.2,
-                alpha:   Math.random(),
-                speed:   Math.random() * 0.008 + 0.002,
-                phase:   Math.random() * Math.PI * 2,
-                color:   Math.random() > 0.85
-                    ? `rgba(180,210,255,`   // slightly blue-white
-                    : `rgba(255,255,255,`,  // pure white
+                x:     Math.random() * canvas.width,
+                y:     Math.random() * canvas.height,
+                r:     Math.random() * 1.4 + 0.2,
+                speed: Math.random() * 0.008 + 0.002,
+                phase: Math.random() * Math.PI * 2,
+                color: Math.random() > 0.85 ? `rgba(180,210,255,` : `rgba(255,255,255,`,
             });
         }
     }
 
     let raf;
     function draw(ts) {
+        raf = requestAnimationFrame(draw);
+        // Throttle frame rate on mobile
+        if (FRAME_MS > 0 && ts - lastFrame < FRAME_MS) return;
+        lastFrame = ts;
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (const s of stars) {
             const a = 0.15 + 0.85 * (0.5 + 0.5 * Math.sin(ts * s.speed + s.phase));
@@ -39,17 +48,32 @@
             ctx.fillStyle = s.color + a.toFixed(3) + ')';
             ctx.fill();
         }
-        raf = requestAnimationFrame(draw);
     }
 
-    resize();
-    window.addEventListener('resize', () => { cancelAnimationFrame(raf); resize(); draw(0); }, { passive: true });
-    // Resize when page content changes height (Blazor renders)
-    document.addEventListener('blazor:afterUpdate', () => {
-        const newH = document.body.scrollHeight;
-        if (Math.abs(canvas.height - newH) > 100) { cancelAnimationFrame(raf); resize(); draw(0); }
+    // Pause animation when tab is hidden to save resources
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) { cancelAnimationFrame(raf); }
+        else { raf = requestAnimationFrame(draw); }
     });
-    requestAnimationFrame(draw);
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => { cancelAnimationFrame(raf); resize(); raf = requestAnimationFrame(draw); }, 200);
+    }, { passive: true });
+
+    // Only resize canvas on significant height changes (debounced)
+    let updateTimer;
+    document.addEventListener('blazor:afterUpdate', () => {
+        clearTimeout(updateTimer);
+        updateTimer = setTimeout(() => {
+            const newH = document.body.scrollHeight;
+            if (Math.abs(canvas.height - newH) > 150) { cancelAnimationFrame(raf); resize(); raf = requestAnimationFrame(draw); }
+        }, 300);
+    });
+
+    resize();
+    raf = requestAnimationFrame(draw);
 })();
 (function () {
     const io = new IntersectionObserver(
@@ -61,7 +85,7 @@
                 }
             });
         },
-        { threshold: 0.05, rootMargin: '0px 0px 0px 0px' }
+        { threshold: 0.05 }
     );
 
     function observe() {
@@ -70,19 +94,17 @@
         });
     }
 
-    // Run immediately, after DOM ready, and after every Blazor re-render
     observe();
     document.addEventListener('DOMContentLoaded', observe);
+
+    let revealTimer;
     document.addEventListener('blazor:afterUpdate', () => {
-        // Small delay so Blazor has finished patching the DOM
-        setTimeout(observe, 50);
+        clearTimeout(revealTimer);
+        revealTimer = setTimeout(observe, 100);
     });
 
-    // Nuclear fallback: if anything is still hidden after 3s, force-show it
     setTimeout(() => {
-        document.querySelectorAll('.reveal, .reveal-scale').forEach(el => {
-            el.classList.add('visible');
-        });
+        document.querySelectorAll('.reveal, .reveal-scale').forEach(el => el.classList.add('visible'));
     }, 3000);
 })();
 
@@ -107,7 +129,12 @@
     }
 
     document.addEventListener('DOMContentLoaded', observeBars);
-    document.addEventListener('blazor:afterUpdate', () => setTimeout(observeBars, 50));
+
+    let barTimer;
+    document.addEventListener('blazor:afterUpdate', () => {
+        clearTimeout(barTimer);
+        barTimer = setTimeout(observeBars, 100);
+    });
 })();
 
 // ── Sticky header shadow on scroll ───────────────────────────────────────
@@ -205,5 +232,9 @@ window.addEventListener('resize', window.drawConstellation, { passive: true });
     }
 
     document.addEventListener('DOMContentLoaded', initCarousel);
-    document.addEventListener('blazor:afterUpdate', () => setTimeout(initCarousel, 80));
+    let carouselTimer;
+    document.addEventListener('blazor:afterUpdate', () => {
+        clearTimeout(carouselTimer);
+        carouselTimer = setTimeout(initCarousel, 100);
+    });
 })();

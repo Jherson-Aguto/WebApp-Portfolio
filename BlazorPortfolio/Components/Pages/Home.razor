@@ -38,7 +38,7 @@
                 }
                 @if (!string.IsNullOrEmpty(avatarSrc))
                 {
-                    <img class="avatar-img" src="@avatarSrc" alt="@profile?.OwnerName" />
+                    <img class="avatar-img" src="@avatarSrc" alt="@profile?.OwnerName" loading="eager" decoding="async" fetchpriority="high" />
                 }
                 else
                 {
@@ -187,7 +187,7 @@
                 <div class="gh-banner anim-slide">
                     @if (!string.IsNullOrEmpty(ghProfile.AvatarUrl))
                     {
-                        <img src="@ghProfile.AvatarUrl" alt="@ghProfile.Name" class="gh-banner-avatar" />
+                        <img src="@ghProfile.AvatarUrl" alt="@ghProfile.Name" class="gh-banner-avatar" loading="lazy" decoding="async" />
                     }
                     <div class="gh-banner-info">
                         <div class="gh-banner-name">@ghProfile.Name</div>
@@ -695,9 +695,9 @@
             var username = profile.GitHubUsername;
 
             // Check cache for all GitHub data at once
-            var ghProfileTask = Cache.GetAsync<GitHubProfile>(CacheService.Keys.GitHubProfile);
-            var pinnedTask    = Cache.GetAsync<List<GitHubPinnedRepo>>(CacheService.Keys.GitHubPinned);
-            var contribTask   = Cache.GetAsync<List<GitHubContributionWeek>>(CacheService.Keys.GitHubContributions);
+            var ghProfileTask  = Cache.GetAsync<GitHubProfile>(CacheService.Keys.GitHubProfile);
+            var pinnedTask     = Cache.GetAsync<List<GitHubPinnedRepo>>(CacheService.Keys.GitHubPinned);
+            var contribTask    = Cache.GetAsync<List<GitHubContributionWeek>>(CacheService.Keys.GitHubContributions);
             var contribTotTask = Cache.GetAsync<int>(CacheService.Keys.GitHubContribTotal);
 
             await Task.WhenAll(ghProfileTask, pinnedTask, contribTask, contribTotTask);
@@ -707,58 +707,76 @@
             ghContribWeeks = contribTask.Result;
             ghContribTotal = contribTotTask.Result;
 
-            // Fetch anything not in cache — profile + pinned in parallel
-            var needGhProfile = ghProfile is null;
-            var needPinned    = pinnedRepos is null;
-            var needContrib   = ghContribWeeks is null;
+            bool anyCached = ghProfile is not null || pinnedRepos is not null;
 
-            if (needGhProfile || needPinned)
+            if (anyCached)
             {
-                var fetchTasks = new List<Task>();
-                Task<GitHubProfile?>? fetchGhProfile = null;
-                Task<List<GitHubPinnedRepo>>? fetchPinned = null;
-
-                if (needGhProfile) fetchTasks.Add(fetchGhProfile = GitHub.GetProfileAsync(username));
-                if (needPinned)    fetchTasks.Add(fetchPinned    = GitHub.GetPinnedReposAsync(username));
-
-                await Task.WhenAll(fetchTasks);
-
-                if (fetchGhProfile is not null)
-                {
-                    ghProfile = await fetchGhProfile;
-                    if (ghProfile is not null) await Cache.SetAsync(CacheService.Keys.GitHubProfile, ghProfile);
-                }
-                if (fetchPinned is not null)
-                {
-                    pinnedRepos = await fetchPinned ?? [];
-                    await Cache.SetAsync(CacheService.Keys.GitHubPinned, pinnedRepos);
-                }
+                // We have cached data — render immediately, then fill gaps in background
+                pinnedRepos ??= [];
+                StateHasChanged();
+                _ = FetchMissingGitHubDataAsync(username, ghProfile is null, pinnedRepos.Count == 0, ghContribWeeks is null);
             }
-
-            pinnedRepos ??= [];
-            StateHasChanged();
-
-            // All repos — lazy load (only shown on tab switch, lower priority)
-            allRepos = await Cache.GetAsync<List<GitHubPinnedRepo>>(CacheService.Keys.GitHubAllRepos)
-                       ?? await FetchAndCache(GitHub.GetAllPublicReposAsync(username), CacheService.Keys.GitHubAllRepos);
-            allRepos ??= [];
-            StateHasChanged();
-
-            if (needContrib)
+            else
             {
-                var (weeks, total) = await GitHub.GetContributionsAsync(username);
-                ghContribWeeks = weeks; ghContribTotal = total;
-                await Cache.SetAsync(CacheService.Keys.GitHubContributions, weeks);
-                await Cache.SetAsync(CacheService.Keys.GitHubContribTotal,  total);
+                // Nothing cached — fetch profile + pinned in parallel (most important for display)
+                var (fetchedProfile, fetchedPinned) = await FetchGitHubCoreAsync(username);
+                ghProfile   = fetchedProfile;
+                pinnedRepos = fetchedPinned ?? [];
+                StateHasChanged();
+
+                // Fetch all repos + contributions in background after first paint
+                _ = FetchMissingGitHubDataAsync(username, false, false, true);
             }
-            if (ghContribWeeks is { Count: > 0 }) { ComputeStreaks(); BuildMonthLabels(); }
-            StateHasChanged();
         }
         else
         {
             pinnedRepos = [];
             allRepos    = [];
         }
+    }
+
+    async Task<(GitHubProfile?, List<GitHubPinnedRepo>?)> FetchGitHubCoreAsync(string username)
+    {
+        var profileTask = GitHub.GetProfileAsync(username);
+        var pinnedTask  = GitHub.GetPinnedReposAsync(username);
+        await Task.WhenAll(profileTask, pinnedTask);
+
+        var p = await profileTask;
+        var r = await pinnedTask;
+        if (p is not null) await Cache.SetAsync(CacheService.Keys.GitHubProfile, p);
+        if (r is not null) await Cache.SetAsync(CacheService.Keys.GitHubPinned, r);
+        return (p, r);
+    }
+
+    async Task FetchMissingGitHubDataAsync(string username, bool needProfile, bool needPinned, bool needContrib)
+    {
+        try
+        {
+            if (needProfile || needPinned)
+            {
+                var (p, r) = await FetchGitHubCoreAsync(username);
+                if (needProfile && p is not null) { ghProfile = p; }
+                if (needPinned  && r is not null) { pinnedRepos = r; }
+                await InvokeAsync(StateHasChanged);
+            }
+
+            // All repos — lower priority, load after core data
+            allRepos = await Cache.GetAsync<List<GitHubPinnedRepo>>(CacheService.Keys.GitHubAllRepos)
+                       ?? await FetchAndCache(GitHub.GetAllPublicReposAsync(username), CacheService.Keys.GitHubAllRepos);
+            allRepos ??= [];
+            await InvokeAsync(StateHasChanged);
+
+            if (needContrib)
+            {
+                var (weeks, total) = await GitHub.GetContributionsAsync(username);
+                ghContribWeeks = weeks; ghContribTotal = total;
+                await Cache.SetAsync(CacheService.Keys.GitHubContributions, weeks);
+                await Cache.SetAsync(CacheService.Keys.GitHubContribTotal, total);
+            }
+            if (ghContribWeeks is { Count: > 0 }) { ComputeStreaks(); BuildMonthLabels(); }
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception) { /* silently degrade — GitHub section just won't show */ }
     }
 
     void SetTab(string tab) => repoTab = tab;

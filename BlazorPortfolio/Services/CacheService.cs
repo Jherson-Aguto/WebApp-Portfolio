@@ -8,7 +8,8 @@ namespace BlazorPortfolio.Services;
 /// </summary>
 public class CacheService(IMemoryCache cache)
 {
-    private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan DefaultTtl = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan GitHubTtl  = TimeSpan.FromHours(2); // GitHub data changes rarely
 
     public Task<T?> GetAsync<T>(string key)
     {
@@ -18,7 +19,8 @@ public class CacheService(IMemoryCache cache)
 
     public Task SetAsync<T>(string key, T data)
     {
-        cache.Set(key, data, Ttl);
+        var ttl = key.StartsWith("gh_") ? GitHubTtl : DefaultTtl;
+        cache.Set(key, data, ttl);
         return Task.CompletedTask;
     }
 

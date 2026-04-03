@@ -26,9 +26,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddHubOptions(options =>
     {
-        options.EnableDetailedErrors = true;
-        options.HandshakeTimeout = TimeSpan.FromSeconds(15);
-        options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+        options.EnableDetailedErrors = false; // disable in prod — saves bandwidth
+        options.HandshakeTimeout = TimeSpan.FromSeconds(30); // more forgiving on 3G/4G
+        options.KeepAliveInterval = TimeSpan.FromSeconds(15); // reduce keep-alive pings
+        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // tolerate mobile network gaps
         options.MaximumReceiveMessageSize = 512 * 1024; // 512 KB — GitHub data can be large
     });
 
@@ -111,7 +112,22 @@ if (!app.Environment.IsDevelopment())
 
 app.UseWebSockets();
 app.UseResponseCompression();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Cache static assets for 7 days — fingerprinted files can go longer
+        var headers = ctx.Context.Response.Headers;
+        var path = ctx.File.Name;
+        if (path.EndsWith(".css") || path.EndsWith(".js") || path.EndsWith(".wasm"))
+            headers["Cache-Control"] = "public, max-age=604800, immutable"; // 7 days
+        else if (path.EndsWith(".png") || path.EndsWith(".jpg") || path.EndsWith(".jpeg")
+              || path.EndsWith(".webp") || path.EndsWith(".svg") || path.EndsWith(".ico"))
+            headers["Cache-Control"] = "public, max-age=2592000"; // 30 days
+        else
+            headers["Cache-Control"] = "public, max-age=3600"; // 1 hour default
+    }
+});
 app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
