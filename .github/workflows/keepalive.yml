@@ -1,5 +1,8 @@
 name: Keep Alive
 
+permissions:
+  contents: read
+
 on:
   schedule:
     # Every 14 minutes, Mon–Fri 6am–12am PHT (UTC+8)
