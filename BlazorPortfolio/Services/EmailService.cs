@@ -2,23 +2,32 @@ using Resend;
 
 namespace BlazorPortfolio.Services;
 
-public class EmailService(IConfiguration config)
+public class EmailService(IConfiguration config, ILogger<EmailService> logger)
 {
     public async Task SendPasswordResetAsync(string toEmail, string resetLink)
     {
-        var allowed = (config["Resend:AllowedRecipients"] ?? "")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var apiKey = config["Resend:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            logger.LogWarning("Resend:ApiKey is not configured — password reset email not sent to {Email}", toEmail);
+            throw new InvalidOperationException("Email service is not configured. Please set Resend:ApiKey.");
+        }
 
-        if (!allowed.Contains(toEmail, StringComparer.OrdinalIgnoreCase))
-            return;
+        // On Resend free tier (no custom domain), you can only send to your
+        // verified Resend account email. Use Resend:OverrideTo to force all
+        // emails to that address regardless of what's in the DB.
+        var overrideTo = config["Resend:OverrideTo"];
+        var actualTo   = !string.IsNullOrWhiteSpace(overrideTo) ? overrideTo : toEmail;
 
-        IResend resend = ResendClient.Create(config["Resend:ApiKey"]!);
+        var from = config["Resend:FromAddress"] ?? "onboarding@resend.dev";
+
+        IResend resend = ResendClient.Create(apiKey);
 
         await resend.EmailSendAsync(new EmailMessage
         {
-            From = "onboarding@resend.dev",
-            To = toEmail,
-            Subject = "Reset your Portfolio Admin password",
+            From     = from,
+            To       = actualTo,
+            Subject  = "Reset your Portfolio Admin password",
             HtmlBody = $"""
                 <div style="font-family: sans-serif; max-width: 600px; margin: auto;">
                     <h2>Password Reset Request</h2>
@@ -32,5 +41,7 @@ public class EmailService(IConfiguration config)
                 </div>
                 """
         });
+
+        logger.LogInformation("Password reset email sent to {ActualTo} (requested for {Email})", actualTo, toEmail);
     }
 }
