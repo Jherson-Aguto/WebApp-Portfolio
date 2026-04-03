@@ -7,6 +7,11 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
+  <!-- Suppress NU1903 for transitive MSBuild packages we don't control directly -->
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-w3q9-fxm7-j8fq" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="MailKit" Version="4.15.1" />

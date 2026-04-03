@@ -2,14 +2,18 @@
 (function () {
     const canvas = document.getElementById('night-sky');
     if (!canvas) return;
+
+    // On mobile the canvas is hidden via CSS — skip all JS work entirely
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) return;
+
     const ctx = canvas.getContext('2d');
     let stars = [];
 
-    // Reduce star density on mobile to save CPU/battery
-    const isMobile = window.innerWidth < 768;
-    const DENSITY  = isMobile ? 14000 : 6000;
-    // Target 30fps on mobile, 60fps on desktop
-    const FRAME_MS = isMobile ? 33 : 0;
+    // Desktop only — keep full density
+    const DENSITY  = 6000;
+    // Desktop: 60fps
+    const FRAME_MS = 0;
     let lastFrame  = 0;
 
     function resize() {

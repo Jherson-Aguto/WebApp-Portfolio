@@ -35,7 +35,10 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddAntiforgery(options =>
 {
-    options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+    // Only enforce Secure cookie in production (HTTPS). Local dev runs on HTTP.
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest
+        : Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
     options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
 });
 
@@ -62,7 +65,7 @@ var forwardedOptions = new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 };
 // Clear default loopback-only restrictions so Render's proxy is trusted
-forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownIPNetworks.Clear();
 forwardedOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedOptions);
 
@@ -116,16 +119,19 @@ app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
     {
-        // Cache static assets for 7 days — fingerprinted files can go longer
         var headers = ctx.Context.Response.Headers;
         var path = ctx.File.Name;
-        if (path.EndsWith(".css") || path.EndsWith(".js") || path.EndsWith(".wasm"))
-            headers["Cache-Control"] = "public, max-age=604800, immutable"; // 7 days
+        // WASM files from _framework are fingerprinted by Blazor — safe to use immutable
+        if (path.EndsWith(".wasm"))
+            headers["Cache-Control"] = "public, max-age=604800, immutable";
+        // Non-fingerprinted JS/CSS — use must-revalidate so browsers check on deploy
+        else if (path.EndsWith(".css") || path.EndsWith(".js"))
+            headers["Cache-Control"] = "public, max-age=3600, must-revalidate"; // 1 hour
         else if (path.EndsWith(".png") || path.EndsWith(".jpg") || path.EndsWith(".jpeg")
               || path.EndsWith(".webp") || path.EndsWith(".svg") || path.EndsWith(".ico"))
-            headers["Cache-Control"] = "public, max-age=2592000"; // 30 days
+            headers["Cache-Control"] = "public, max-age=86400"; // 1 day
         else
-            headers["Cache-Control"] = "public, max-age=3600"; // 1 hour default
+            headers["Cache-Control"] = "public, max-age=3600";
     }
 });
 app.UseAntiforgery();

@@ -1048,3 +1048,61 @@ textarea.form-control { resize: vertical; }
 }
 .collab-empty-icon { font-size: 2rem; }
 .collab-empty p { font-size: .95rem; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE VISUAL SIMPLIFICATION  —  clean, professional, no distractions
+   Applies only on screens ≤ 768px (phones / small tablets)
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+    /* ── Replace animated starfield with a static gradient background ── */
+    #night-sky { display: none; }
+
+    body {
+        background:
+            radial-gradient(ellipse at 20% 10%, rgba(0,229,255,.07) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 80%, rgba(124,111,255,.06) 0%, transparent 50%),
+            #111318;
+    }
+
+    /* ── Stop avatar ring from spinning ── */
+    .avatar-ring {
+        animation: none;
+        background: conic-gradient(var(--cyan), #7c6fff, #ff6b9d, var(--cyan));
+    }
+
+    /* ── Remove hero text / avatar fade-in ── */
+    .hero-text,
+    .hero-avatar {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+
+    /* ── Remove floating orb animations in hero background ── */
+    .hero-bg::before,
+    .hero-bg::after {
+        animation: none;
+    }
+
+    /* ── Remove scroll-hint bounce ── */
+    .scroll-hint { animation: none; }
+
+    /* ── Remove card entrance animations (anim-slide / anim-scale) ── */
+    .anim-slide,
+    .anim-scale {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+
+    /* ── Remove stagger delays on mobile ── */
+    .d1, .d2, .d3, .d4, .d5, .d6 { animation-delay: 0s; }
+
+    /* ── Stop constellation nodes from floating ── */
+    .constellation-node { animation: none; }
+
+    /* ── Stop brand dot pulsing (subtle but still costs paint) ── */
+    .brand-dot { animation: none; }
+}
