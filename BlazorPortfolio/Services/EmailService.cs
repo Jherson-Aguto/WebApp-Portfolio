@@ -9,7 +9,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger)
         var apiKey = config["Resend:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            logger.LogWarning("Resend:ApiKey is not configured — password reset email not sent to {Email}", toEmail);
+            logger.LogWarning("Resend:ApiKey is not configured — password reset email not sent.");
             throw new InvalidOperationException("Email service is not configured. Please set Resend:ApiKey.");
         }
 
@@ -42,6 +42,6 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger)
                 """
         });
 
-        logger.LogInformation("Password reset email sent to {ActualTo} (requested for {Email})", actualTo, toEmail);
+        logger.LogInformation("Password reset email sent successfully.");
     }
 }
