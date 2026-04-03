@@ -1109,3 +1109,70 @@ textarea.form-control { resize: vertical; }
     /* ── Reduce backdrop blur on header — expensive on low-end Android ── */
     .site-header { backdrop-filter: blur(8px) saturate(1.1); }
 }
+
+/* ── App Loading Screen ───────────────────────────────────────────────────── */
+#app-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-loading-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.app-loading-logo {
+    font-family: var(--font);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    letter-spacing: -0.02em;
+}
+
+.app-loading-logo .brand-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 12px var(--cyan);
+    display: inline-block;
+    animation: loading-pulse 1.4s ease-in-out infinite;
+}
+
+.app-loading-bar {
+    width: 160px;
+    height: 2px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.app-loading-bar-fill {
+    height: 100%;
+    width: 40%;
+    background: var(--cyan);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--cyan);
+    animation: loading-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes loading-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+@keyframes loading-slide {
+    0%   { transform: translateX(-100%); }
+    50%  { transform: translateX(150%); }
+    100% { transform: translateX(150%); }
+}
