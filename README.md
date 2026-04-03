@@ -126,6 +126,18 @@ KeepAlive__BaseUrl=https://your-app.onrender.com/health
 
 > If you fork this repo, update the URL in `.github/workflows/keepalive.yml` to point to your own Render deployment.
 
+## Mobile Performance
+
+The app includes several optimizations specifically for mobile devices and the Render free tier:
+
+- **Adaptive animations** — all decorative animations (starfield, avatar ring spin, card entrance effects, hero fade-ins, floating orbs) are disabled on screens ≤ 768px via CSS media queries. Desktop keeps the full animated experience.
+- **Starfield JS skipped on mobile** — the canvas animation loop never starts on mobile, saving CPU and battery entirely.
+- **Static gradient background on mobile** — replaces the canvas starfield with a lightweight CSS radial gradient.
+- **GitHub data loading** — cache-first with background fill. Cached data renders immediately; missing data fetches in the background after first paint. GitHub cache TTL is 2 hours.
+- **SignalR tuned for mobile** — handshake timeout 30s, keep-alive interval 15s, client timeout 60s to tolerate unstable mobile networks.
+- **Static file caching** — JS/CSS cached 1 hour with `must-revalidate`, images 1 day, WASM 7 days with `immutable`.
+- **Debounced Blazor update handlers** — all `blazor:afterUpdate` listeners are debounced to prevent excessive repaints on every interaction.
+
 ## License
 
 MIT
