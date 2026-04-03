@@ -21,7 +21,7 @@
                 <label>Password</label>
                 <InputText @bind-Value="model.Password" type="password" class="form-control" />
             </div>
-            <button type="submit" class="btn-primary" style="width:100%" disabled="@loading">
+            <button type="submit" class="btn-primary" style="width:100%" disabled="@(loading || lockedOut)">
                 @(loading ? "Logging in..." : "Login")
             </button>
         </EditForm>
@@ -33,15 +33,47 @@
     LoginModel model = new();
     string? error;
     bool loading;
+    bool lockedOut;
+
+    // Use a stable per-session key — circuit ID would be ideal but username is fine
+    private string AttemptKey => "login";
+
+    protected override void OnInitialized()
+    {
+        if (Auth.IsLockedOut(AttemptKey))
+        {
+            var remaining = Auth.LockoutRemaining(AttemptKey);
+            error = $"Too many failed attempts. Try again in {(int)remaining.TotalSeconds}s.";
+            lockedOut = true;
+        }
+    }
 
     async Task DoLogin()
     {
+        if (Auth.IsLockedOut(AttemptKey))
+        {
+            var remaining = Auth.LockoutRemaining(AttemptKey);
+            error = $"Too many failed attempts. Try again in {(int)remaining.TotalSeconds}s.";
+            lockedOut = true;
+            return;
+        }
+
         loading = true;
         error = null;
-        if (await Auth.LoginAsync(model.Username, model.Password))
+
+        if (await Auth.LoginAsync(model.Username, model.Password, AttemptKey))
             Nav.NavigateTo("/admin");
         else
-            error = "Invalid credentials.";
+        {
+            if (Auth.IsLockedOut(AttemptKey))
+            {
+                error = "Too many failed attempts. Please wait 1 minute before trying again.";
+                lockedOut = true;
+            }
+            else
+                error = "Invalid credentials.";
+        }
+
         loading = false;
     }
 
