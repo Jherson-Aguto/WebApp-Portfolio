@@ -5,10 +5,10 @@ permissions:
 
 on:
   schedule:
-    # Every 10 minutes, Mon–Fri 6pm–10pm PHT (UTC+8)
+    # Every 5 minutes, Mon–Fri 6pm–10pm PHT (UTC+8)
     # PHT 6:00pm = UTC 10:00, PHT 10:00pm = UTC 14:00
-    - cron: '0/10 10-13 * * 1-5'       # Mon–Fri 10:00–13:59 UTC (6pm–9:59pm PHT)
-    - cron: '0,10,20,30,40,50 14 * * 1-5' # Mon–Fri 14:00–14:50 UTC (10pm PHT cutoff)
+    - cron: '*/5 10-13 * * 1-5'       # Mon–Fri 10:00–13:59 UTC (6pm–9:59pm PHT)
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 14 * * 1-5' # Mon–Fri 14:00–14:55 UTC (10pm PHT cutoff)
 
 jobs:
   ping:
