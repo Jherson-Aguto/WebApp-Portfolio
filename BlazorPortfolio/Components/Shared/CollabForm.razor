@@ -4,7 +4,7 @@
 @if (collabSent)
 {
     <div class="alert-success">
-        <span class="alert-icon">✅</span>
+        <span class="alert-icon"><Icon Name="check-circle" Size="22" /></span>
         <div>
             <strong>Request sent!</strong>
             <p>Thanks for reaching out. I'll review your request and get back to you.</p>
@@ -41,9 +41,10 @@ else
             </div>
         </div>
         <div class="form-group">
-            <label>Message <span class="field-hint">(max 500 chars)</span></label>
+            <label>Collaboration Idea <span class="field-hint">(max 500 chars)</span></label>
             <InputTextArea @bind-Value="collabReq.Message" class="form-control" rows="4"
-                           placeholder="Tell me what you'd like to collaborate on... (optional)" />
+                           placeholder="E.g. Let's build a C# project together, or I'd love to learn about your Blazor setup!" />
+            <span class="input-description">Briefly describe your project or how we can work together.</span>
             <ValidationMessage For="() => collabReq.Message" />
         </div>
         <button type="submit" class="btn-primary btn-full">Send Collaboration Request →</button>
