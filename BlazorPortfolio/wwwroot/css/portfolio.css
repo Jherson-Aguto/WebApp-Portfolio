@@ -58,6 +58,17 @@ a { color: var(--cyan); text-decoration: none; transition: color var(--transitio
 a:hover { color: #5ef3ff; }
 h1,h2,h3,h4 { color: var(--text-bright); line-height: 1.2; }
 
+/* Icons */
+.lucide-icon {
+    display: inline-block; vertical-align: middle;
+    flex-shrink: 0;
+    transition: transform var(--transition);
+}
+.ci-icon .lucide-icon { color: var(--cyan); }
+.alert-icon .lucide-icon { color: var(--success); }
+.collab-empty-icon .lucide-icon { color: var(--text-muted); opacity: .5; margin-bottom: 1rem; }
+.project-icon .lucide-icon { color: var(--cyan); filter: drop-shadow(0 0 8px var(--cyan-glow)); }
+
 /* ── Utilities ────────────────────────────────────────────────────────────── */
 .container { max-width: 1140px; margin: 0 auto; padding: 0 1.5rem; }
 .accent { color: var(--cyan); }
@@ -142,6 +153,21 @@ h1,h2,h3,h4 { color: var(--text-bright); line-height: 1.2; }
 }
 .section-header h2 { font-size: clamp(1.7rem, 3vw, 2.2rem); letter-spacing: -.02em; }
 .section-header p { color: var(--text-muted); margin-top: .5rem; max-width: 520px; }
+
+/* Title with count badge */
+.title-with-count { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--cyan-glow2); border: 1px solid var(--border-cyan);
+    color: var(--cyan); font-size: .85rem; font-weight: 700;
+    padding: .15rem .75rem; border-radius: 20px;
+    box-shadow: 0 0 12px var(--cyan-glow2);
+    animation: badge-pulse 3s infinite;
+}
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 12px var(--cyan-glow2); }
+    50% { transform: scale(1.05); box-shadow: 0 0 20px var(--cyan-glow); }
+}
 
 /* ── Hero ─────────────────────────────────────────────────────────────────── */
 .hero {
@@ -404,6 +430,8 @@ h1,h2,h3,h4 { color: var(--text-bright); line-height: 1.2; }
 }
 .form-control:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-glow2); }
 textarea.form-control { resize: vertical; }
+.input-description { display: block; font-size: .75rem; color: var(--text-muted); margin-top: .4rem; line-height: 1.4; }
+.field-hint { color: var(--cyan); opacity: .7; font-weight: 400; }
 
 /* ── Alerts ───────────────────────────────────────────────────────────────── */
 .alert-success {
@@ -653,6 +681,7 @@ textarea.form-control { resize: vertical; }
 .gh-cell.has-contrib:hover { box-shadow: 0 0 8px currentColor; }
 .gh-cell-empty { background: transparent !important; pointer-events: none; }
 .gh-cell-zero { background: rgba(255,255,255,.04); }
+.gh-contrib-canvas { display: block; cursor: crosshair; image-rendering: pixelated; }
 
 /* Legend */
 .gh-legend {
