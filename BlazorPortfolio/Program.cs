@@ -94,7 +94,10 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        db.Database.Migrate();
+        // Only run migrations if there are pending ones — avoids a round-trip on every cold start
+        var pending = db.Database.GetPendingMigrations();
+        if (pending.Any())
+            db.Database.Migrate();
     }
     catch (Exception ex)
     {
@@ -103,7 +106,7 @@ using (var scope = app.Services.CreateScope())
         Environment.Exit(1);
     }
 
-    if (!db.AdminUsers.Any())
+    if (!await db.AdminUsers.AnyAsync())
     {
         db.AdminUsers.Add(new AdminUser
         {
@@ -111,7 +114,7 @@ using (var scope = app.Services.CreateScope())
             Email = "admin@example.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123")
         });
-        db.SaveChanges();
+        await db.SaveChangesAsync();
     }
 }
 
