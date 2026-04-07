@@ -103,34 +103,41 @@
             <h2>Projects</h2>
         </div>
         <div class="projects-grid">
-            @if (projects is not null)
+            @if (projectViewModels is { Count: > 0 })
             {
                 int pi = 0;
-                @foreach (var proj in projects)
+                @foreach (var proj in projectViewModels)
                 {
                     var pd = $"d{(pi % 6) + 1}"; pi++;
                     <div class="project-card anim-scale @pd">
                         <div class="project-card-top">
-                            <span class="project-icon"><Icon Name="rocket" Size="24" /></span>
+                            <span class="project-icon"><Icon Name="@proj.IconName" Size="24" /></span>
                             <div class="project-links">
                                 @if (!string.IsNullOrEmpty(proj.LiveUrl))
                                 {
-                                    <a href="@proj.LiveUrl" target="_blank" title="Live demo">↗</a>
+                                    <a href="@proj.LiveUrl" target="_blank" class="link-icon" title="Live Demo">
+                                        <Icon Name="external-link" Size="18" />
+                                    </a>
                                 }
                                 @if (!string.IsNullOrEmpty(proj.RepoUrl))
                                 {
-                                    <a href="@proj.RepoUrl" target="_blank" title="Source code">⌥</a>
+                                    <a href="@proj.RepoUrl" target="_blank" class="link-icon" title="Source Repo">
+                                        <Icon Name="github" Size="18" />
+                                    </a>
                                 }
                             </div>
                         </div>
                         <h3>@proj.Title</h3>
                         <p class="proj-desc">@proj.Description</p>
-                        <div class="tech-tags">
-                            @foreach (var tag in proj.TechStack.Split(',', StringSplitOptions.TrimEntries))
-                            {
-                                <span class="tech-tag">@tag</span>
-                            }
-                        </div>
+                        @if (!string.IsNullOrEmpty(proj.TechStack))
+                        {
+                            <div class="tech-tags">
+                                @foreach (var tag in proj.TechStack.Split(',', StringSplitOptions.TrimEntries))
+                                {
+                                    <span class="tech-tag">@tag</span>
+                                }
+                            </div>
+                        }
                     </div>
                 }
             }
@@ -661,7 +668,7 @@
 @code {
     List<Experience>? experiences;
     List<Skill>? skills;
-    List<Project>? projects;
+    List<ProjectViewModel> projectViewModels = [];
     SiteProfile? profile;
     HiringMessage hiringMsg = new();
     bool messageSent;
@@ -691,6 +698,8 @@
     record ConstellationEdge(int A, int B, double Weight);
     record ConstellationSystem(string Name, string Color, List<ConstellationNode> Nodes, List<ConstellationEdge> Edges);
 
+    record ProjectViewModel(int Id, string Title, string Description, string TechStack, string? LiveUrl, string? RepoUrl, string IconName);
+
     protected override async Task OnInitializedAsync()
     {
         var profileTask     = Cache.GetAsync<SiteProfile>(CacheService.Keys.Profile);
@@ -704,8 +713,15 @@
         profile               = profileTask.Result     ?? await FetchAndCache(Svc.GetProfileAsync(),                      CacheService.Keys.Profile);
         experiences           = experiencesTask.Result ?? await FetchAndCache(Svc.GetExperiencesAsync(),                  CacheService.Keys.Experiences);
         skills                = skillsTask.Result      ?? await FetchAndCache(Svc.GetSkillsAsync(),                       CacheService.Keys.Skills);
-        projects              = projectsTask.Result    ?? await FetchAndCache(Svc.GetProjectsAsync(),                     CacheService.Keys.Projects);
+        var projects           = projectsTask.Result    ?? await FetchAndCache(Svc.GetProjectsAsync(),                     CacheService.Keys.Projects);
         approvedCollaborators = collabTask.Result      ?? await FetchAndCache(Svc.GetApprovedCollaboratorsAsync(),         CacheService.Keys.Collaborators);
+
+        if (projects is not null)
+        {
+            projectViewModels = projects.Select(p => new ProjectViewModel(
+                p.Id, p.Title, p.Description, p.TechStack, p.LiveUrl, p.RepoUrl, DetermineIconName(p)
+            )).ToList();
+        }
 
         BuildConstellation();
     }
@@ -952,5 +968,34 @@
         if (d.TotalDays < 30) return $"{(int)(d.TotalDays/7)}w ago";
         if (d.TotalDays < 365) return $"{(int)(d.TotalDays/30)}mo ago";
         return $"{(int)(d.TotalDays/365)}y ago";
+    }
+
+    private string DetermineIconName(Project p)
+    {
+        var tech = (p.TechStack ?? "").ToLowerInvariant();
+        var title = p.Title.ToLowerInvariant();
+
+        if (tech.Contains("react") || tech.Contains("vue") || tech.Contains("frontend") || tech.Contains("javascript") || tech.Contains("typescript")) 
+            return "code";
+        
+        if (tech.Contains("dotnet") || tech.Contains(".net") || tech.Contains("c#") || tech.Contains("api") || tech.Contains("backend") || tech.Contains("server")) 
+            return "server";
+        
+        if (tech.Contains("sql") || tech.Contains("db") || tech.Contains("database") || tech.Contains("entity framework") || tech.Contains("ef core") || tech.Contains("postgresql")) 
+            return "database";
+        
+        if (tech.Contains("cloud") || tech.Contains("azure") || tech.Contains("aws") || tech.Contains("docker") || tech.Contains("kubernetes") || tech.Contains("deploy")) 
+            return "cloud";
+        
+        if (tech.Contains("mobile") || tech.Contains("android") || tech.Contains("ios") || tech.Contains("flutter")) 
+            return "smartphone";
+        
+        if (tech.Contains("ai") || tech.Contains("machine learning") || tech.Contains("python") || tech.Contains("math")) 
+            return "cpu";
+
+        if (tech.Contains("terminal") || tech.Contains("cli") || tech.Contains("bash") || tech.Contains("shell")) 
+            return "terminal";
+
+        return "box";
     }
 }
