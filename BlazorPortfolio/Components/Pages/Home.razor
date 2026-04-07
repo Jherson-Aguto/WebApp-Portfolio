@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
 @inject ContentService Svc
 @inject CacheService Cache
@@ -111,7 +111,7 @@
                     var pd = $"d{(pi % 6) + 1}"; pi++;
                     <div class="project-card anim-scale @pd">
                         <div class="project-card-top">
-                            <span class="project-icon">🚀</span>
+                            <span class="project-icon"><Icon Name="rocket" Size="24" /></span>
                             <div class="project-links">
                                 @if (!string.IsNullOrEmpty(proj.LiveUrl))
                                 {
@@ -432,19 +432,19 @@
                 <ul class="contact-details">
                     @if (!string.IsNullOrEmpty(profile?.Email))
                     {
-                        <li><span class="ci-icon">📧</span> <a href="mailto:@profile.Email">@profile.Email</a></li>
+                        <li><span class="ci-icon"><Icon Name="mail" Size="18" /></span> <a href="mailto:@profile.Email">@profile.Email</a></li>
                     }
                     @if (!string.IsNullOrEmpty(profile?.Location))
                     {
-                        <li><span class="ci-icon">🌍</span> @profile.Location</li>
+                        <li><span class="ci-icon"><Icon Name="map-pin" Size="18" /></span> @profile.Location</li>
                     }
                     @if (!string.IsNullOrEmpty(profile?.GitHubUrl))
                     {
-                        <li><span class="ci-icon">💻</span> <a href="@profile.GitHubUrl" target="_blank">GitHub</a></li>
+                        <li><span class="ci-icon"><Icon Name="github" Size="18" /></span> <a href="@profile.GitHubUrl" target="_blank">GitHub</a></li>
                     }
                     @if (!string.IsNullOrEmpty(profile?.LinkedInUrl))
                     {
-                        <li><span class="ci-icon">💼</span> <a href="@profile.LinkedInUrl" target="_blank">LinkedIn</a></li>
+                        <li><span class="ci-icon"><Icon Name="linkedin" Size="18" /></span> <a href="@profile.LinkedInUrl" target="_blank">LinkedIn</a></li>
                     }
                 </ul>
             </div>
@@ -452,7 +452,7 @@
                 @if (messageSent)
                 {
                     <div class="alert-success">
-                        <span class="alert-icon">✅</span>
+                        <span class="alert-icon"><Icon Name="check-circle" Size="22" /></span>
                         <div>
                             <strong>Message sent!</strong>
                             <p>Thanks for reaching out. I'll get back to you soon.</p>
@@ -497,7 +497,10 @@
     <div class="container">
         <div class="section-header">
             <span class="section-tag">Network</span>
-            <h2>Collaboration Network</h2>
+            <div class="title-with-count">
+                <h2>Collaboration Network</h2>
+                <span class="badge">@(approvedCollaborators?.Count ?? 0)</span>
+            </div>
             <p>People I've connected and collaborated with.</p>
         </div>
         @if (approvedCollaborators is null)
@@ -511,7 +514,7 @@
         else if (approvedCollaborators.Count == 0)
         {
             <div class="collab-empty">
-                <span class="collab-empty-icon">🤝</span>
+                <span class="collab-empty-icon"><Icon Name="users" Size="48" /></span>
                 <p>No collaborators yet — be the first to connect!</p>
                 <a href="#connect" class="btn-outline">Send a Request</a>
             </div>
@@ -589,15 +592,15 @@
             <div class="contact-info">
                 <p>Looking to collaborate on something interesting? Send a request and I'll review it personally.</p>
                 <ul class="contact-details">
-                    <li><span class="ci-icon">🤝</span> Open to freelance &amp; collaborations</li>
-                    <li><span class="ci-icon">🔍</span> Every request is reviewed manually</li>
+                    <li><span class="ci-icon"><Icon Name="handshake" Size="18" /></span> Open to freelance &amp; collaborations</li>
+                    <li><span class="ci-icon"><Icon Name="search" Size="18" /></span> Every request is reviewed manually</li>
                 </ul>
             </div>
             <div class="contact-form-wrap">
                 @if (collabSent)
                 {
                     <div class="alert-success">
-                        <span class="alert-icon">✅</span>
+                        <span class="alert-icon"><Icon Name="check-circle" Size="22" /></span>
                         <div>
                             <strong>Request sent!</strong>
                             <p>Thanks for reaching out. I'll review your request and get back to you.</p>
@@ -634,9 +637,10 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Message <span class="field-hint">(max 500 chars)</span></label>
+                            <label>Collaboration Idea <span class="field-hint">(max 500 chars)</span></label>
                             <InputTextArea @bind-Value="collabReq.Message" class="form-control" rows="4"
-                                           placeholder="Tell me what you'd like to collaborate on... (optional)" />
+                                           placeholder="E.g. Let's build a C# project together, or I'd love to learn about your Blazor setup!" />
+                            <span class="input-description">Briefly describe your project or how we can work together.</span>
                             <ValidationMessage For="() => collabReq.Message" />
                         </div>
                         <button type="submit" class="btn-primary btn-full">Send Collaboration Request →</button>
