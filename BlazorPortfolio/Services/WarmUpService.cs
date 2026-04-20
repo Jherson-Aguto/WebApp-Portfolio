@@ -19,8 +19,9 @@ public class WarmUpService(
 
     private async Task WarmUpAsync(CancellationToken ct)
     {
-        // Small delay so the app is fully ready before we hit the DB
-        await Task.Delay(TimeSpan.FromSeconds(5), ct);
+        // Delay reduced to 2 s — enough for the DI container and DB context to be
+        // fully registered, while keeping the cache hot well before the first visitor.
+        await Task.Delay(TimeSpan.FromSeconds(2), ct);
 
         try
         {
