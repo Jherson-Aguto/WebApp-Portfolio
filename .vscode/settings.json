@@ -1,0 +1,126 @@
+{
+    "json.schemas": [
+        {
+            "fileMatch": [
+                "/BlazorPortfolio/appsettings.json",
+                "/BlazorPortfolio/appsettings.Development.json",
+                "/BlazorPortfolio/appsettings.example.json"
+            ],
+            "schema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                    "ConnectionStrings": {
+                        "type": "object",
+                        "properties": {
+                            "DefaultConnection": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": true
+                    },
+                    "Admin": {
+                        "type": "object",
+                        "properties": {
+                            "Username": {
+                                "type": "string"
+                            },
+                            "Password": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": true
+                    },
+                    "Logging": {
+                        "type": "object",
+                        "properties": {
+                            "LogLevel": {
+                                "type": "object",
+                                "properties": {
+                                    "Default": {
+                                        "type": "string"
+                                    },
+                                    "Microsoft.AspNetCore": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": true
+                            }
+                        },
+                        "additionalProperties": true
+                    },
+                    "Embedding": {
+                        "type": "object",
+                        "properties": {
+                            "AllowedFrameAncestors": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "additionalProperties": true
+                    },
+                    "AllowedHosts": {
+                        "type": "string"
+                    },
+                    "KeepAlive": {
+                        "type": "object",
+                        "properties": {
+                            "BaseUrl": {
+                                "type": "string"
+                            },
+                            "IntervalMinutes": {
+                                "type": [
+                                    "string",
+                                    "number"
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    },
+                    "Cloudinary": {
+                        "type": "object",
+                        "properties": {
+                            "CloudName": {
+                                "type": "string"
+                            },
+                            "ApiKey": {
+                                "type": "string"
+                            },
+                            "ApiSecret": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": true
+                    },
+                    "GitHub": {
+                        "type": "object",
+                        "properties": {
+                            "Token": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": true
+                    },
+                    "Resend": {
+                        "type": "object",
+                        "properties": {
+                            "ApiKey": {
+                                "type": "string"
+                            },
+                            "FromAddress": {
+                                "type": "string"
+                            },
+                            "OverrideTo": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "additionalProperties": true
+            }
+        }
+    ]
+}
