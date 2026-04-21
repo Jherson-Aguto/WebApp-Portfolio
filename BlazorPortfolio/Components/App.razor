@@ -14,9 +14,11 @@
     <meta name="twitter:title" content="Developer Portfolio" />
     <meta name="twitter:description" content="Full Stack Developer · .NET · Blazor · Cloud" />
     <base href="/" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Preload critical local resources to reduce waterfall depth -->
+    <link rel="preload" href="css/portfolio.css" as="style" />
+    <link rel="preload" href="_framework/blazor.web.js" as="script" />
+    <!-- Preconnect to GitHub avatar CDN so the hero image loads faster -->
+    <link rel="preconnect" href="https://avatars.githubusercontent.com" />
     <ResourcePreloader />
     <link rel="stylesheet" href="css/portfolio.css" />
     <ImportMap />

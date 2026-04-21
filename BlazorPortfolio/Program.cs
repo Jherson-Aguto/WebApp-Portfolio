@@ -162,6 +162,9 @@ app.UseStaticFiles(new StaticFileOptions
         // WASM files from _framework are fingerprinted by Blazor — safe to use immutable
         if (path.EndsWith(".wasm"))
             headers["Cache-Control"] = "public, max-age=604800, immutable";
+        // Self-hosted fonts never change between deploys — cache 1 year
+        else if (path.EndsWith(".woff2") || path.EndsWith(".woff"))
+            headers["Cache-Control"] = "public, max-age=31536000, immutable";
         // Non-fingerprinted JS/CSS — use must-revalidate so browsers check on deploy
         else if (path.EndsWith(".css") || path.EndsWith(".js"))
             headers["Cache-Control"] = "public, max-age=3600, must-revalidate"; // 1 hour
