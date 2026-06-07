@@ -10,25 +10,33 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 
-// Load local environment variables from .env file for development
-var envPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "../.env");
-if (!System.IO.File.Exists(envPath))
-{
-    envPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), ".env");
-}
-if (System.IO.File.Exists(envPath))
-{
-    foreach (var line in System.IO.File.ReadAllLines(envPath))
-    {
-        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
-            continue;
+// Load local environment variables from .env file for development (if not running tests)
+var isTesting = AppDomain.CurrentDomain.GetAssemblies().Any(a => 
+    a.FullName!.Contains("xunit", StringComparison.OrdinalIgnoreCase) || 
+    a.FullName!.Contains("Microsoft.TestPlatform", StringComparison.OrdinalIgnoreCase) || 
+    a.FullName!.Contains("testhost", StringComparison.OrdinalIgnoreCase));
 
-        var parts = line.Split('=', 2);
-        if (parts.Length == 2)
+if (!isTesting)
+{
+    var envPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "../.env");
+    if (!System.IO.File.Exists(envPath))
+    {
+        envPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), ".env");
+    }
+    if (System.IO.File.Exists(envPath))
+    {
+        foreach (var line in System.IO.File.ReadAllLines(envPath))
         {
-            var key = parts[0].Trim();
-            var val = parts[1].Trim().Trim('"');
-            Environment.SetEnvironmentVariable(key, val);
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+                continue;
+
+            var parts = line.Split('=', 2);
+            if (parts.Length == 2)
+            {
+                var key = parts[0].Trim();
+                var val = parts[1].Trim().Trim('"');
+                Environment.SetEnvironmentVariable(key, val);
+            }
         }
     }
 }
@@ -197,33 +205,36 @@ foreach (var key in requiredSecrets)
         app.Logger.LogWarning("Required environment variable '{Key}' is not set.", key);
 }
 
-// Auto-migrate on startup and seed default admin if none exists
-using (var scope = app.Services.CreateScope())
+// Auto-migrate on startup and seed default admin if none exists (skipped during tests to prevent crashes)
+if (!isTesting)
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        // Only run migrations if there are pending ones — avoids a round-trip on every cold start
-        var pending = db.Database.GetPendingMigrations();
-        if (pending.Any())
-            db.Database.Migrate();
-    }
-    catch (Exception ex)
-    {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogCritical(ex, "Failed to apply migrations. Persistent volume may be unavailable. Exiting.");
-        Environment.Exit(1);
-    }
-
-    if (!await db.AdminUsers.AnyAsync())
-    {
-        db.AdminUsers.Add(new AdminUser
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        try
         {
-            Username = "admin",
-            Email = "admin@example.com",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123")
-        });
-        await db.SaveChangesAsync();
+            // Only run migrations if there are pending ones — avoids a round-trip on every cold start
+            var pending = db.Database.GetPendingMigrations();
+            if (pending.Any())
+                db.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogCritical(ex, "Failed to apply migrations. Persistent volume may be unavailable. Exiting.");
+            Environment.Exit(1);
+        }
+
+        if (!await db.AdminUsers.AnyAsync())
+        {
+            db.AdminUsers.Add(new AdminUser
+            {
+                Username = "admin",
+                Email = "admin@example.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123")
+            });
+            await db.SaveChangesAsync();
+        }
     }
 }
 
