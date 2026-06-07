@@ -8,6 +8,30 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Components.Server.Circuits;
+
+// Load local environment variables from .env file for development
+var envPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "../.env");
+if (!System.IO.File.Exists(envPath))
+{
+    envPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), ".env");
+}
+if (System.IO.File.Exists(envPath))
+{
+    foreach (var line in System.IO.File.ReadAllLines(envPath))
+    {
+        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+            continue;
+
+        var parts = line.Split('=', 2);
+        if (parts.Length == 2)
+        {
+            var key = parts[0].Trim();
+            var val = parts[1].Trim().Trim('"');
+            Environment.SetEnvironmentVariable(key, val);
+        }
+    }
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -95,6 +119,12 @@ builder.Services.AddScoped<GeminiService>();
 builder.Services.AddHostedService<KeepAliveService>();
 builder.Services.AddHostedService<WarmUpService>();
 
+// Smart Database Keep-Alive (Neon Free Tier Optimization)
+builder.Services.Configure<DatabaseKeepAliveOptions>(builder.Configuration.GetSection("DatabaseKeepAlive"));
+builder.Services.AddSingleton<DatabaseKeepAliveService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<DatabaseKeepAliveService>());
+builder.Services.AddScoped<CircuitHandler, ActivityCircuitHandler>();
+
 var app = builder.Build();
 
 var frameAncestorsValue = BuildFrameAncestorsDirective(allowedFrameAncestors);
@@ -122,6 +152,38 @@ var forwardedOptions = new ForwardedHeadersOptions
 forwardedOptions.KnownIPNetworks.Clear();
 forwardedOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedOptions);
+
+// Track user activity to keep the database warm under free tier limits
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+
+    // Ignore static asset requests
+    var isStaticFile = path.Contains('.') && 
+                       (path.EndsWith(".js", StringComparison.OrdinalIgnoreCase) || 
+                        path.EndsWith(".css", StringComparison.OrdinalIgnoreCase) || 
+                        path.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                        path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || 
+                        path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) || 
+                        path.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ||
+                        path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) || 
+                        path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) || 
+                        path.EndsWith(".wasm", StringComparison.OrdinalIgnoreCase) ||
+                        path.EndsWith(".woff", StringComparison.OrdinalIgnoreCase) || 
+                        path.EndsWith(".woff2", StringComparison.OrdinalIgnoreCase));
+
+    // Ignore automated health/keep-alive endpoint pings
+    var isHealthCheck = path.Equals("/health", StringComparison.OrdinalIgnoreCase) ||
+                        path.StartsWith("/api/resume/active", StringComparison.OrdinalIgnoreCase);
+
+    if (!isStaticFile && !isHealthCheck)
+    {
+        var keepAliveService = context.RequestServices.GetService<DatabaseKeepAliveService>();
+        keepAliveService?.RecordActivity();
+    }
+
+    await next();
+});
 
 // Warn on missing required secrets
 var requiredSecrets = new[]

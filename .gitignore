@@ -9,6 +9,7 @@ obj/
 *.db-wal
 
 ## Secrets
+.env
 appsettings.json
 BlazorPortfolio/appsettings.json
 BlazorPortfolio/appsettings.Development.json
