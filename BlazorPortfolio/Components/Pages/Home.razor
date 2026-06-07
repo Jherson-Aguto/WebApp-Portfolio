@@ -117,48 +117,58 @@
 <section class="section alt" id="projects">
     <div class="container">
         <div class="section-header">
-            <span class="section-tag">My Work</span>
-            <h2>Projects</h2>
+            <span class="section-tag">Portfolio Migration</span>
+            <h2>Active Projects & Builds</h2>
         </div>
-        <div class="projects-grid">
-            @if (projectViewModels is { Count: > 0 })
-            {
-                int pi = 0;
-                @foreach (var proj in projectViewModels)
-                {
-                    var pd = $"d{(pi % 6) + 1}"; pi++;
-                    <div class="project-card anim-scale @pd">
-                        <div class="project-card-top">
-                            <span class="project-icon"><Icon Name="@proj.IconName" Size="24" /></span>
-                            <div class="project-links">
-                                @if (!string.IsNullOrEmpty(proj.LiveUrl))
-                                {
-                                    <a href="@proj.LiveUrl" target="_blank" rel="noopener noreferrer" class="link-icon" title="Live Demo">
-                                        <Icon Name="external-link" Size="18" />
-                                    </a>
-                                }
-                                @if (!string.IsNullOrEmpty(proj.RepoUrl))
-                                {
-                                    <a href="@proj.RepoUrl" target="_blank" rel="noopener noreferrer" class="link-icon" title="Source Repo">
-                                        <Icon Name="github" Size="18" />
-                                    </a>
-                                }
-                            </div>
-                        </div>
-                        <h3>@proj.Title</h3>
-                        <p class="proj-desc">@proj.Description</p>
-                        @if (!string.IsNullOrEmpty(proj.TechStack))
-                        {
-                            <div class="tech-tags">
-                                @foreach (var tag in proj.TechStack.Split(',', StringSplitOptions.TrimEntries))
-                                {
-                                    <span class="tech-tag">@tag</span>
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-            }
+        
+        <div class="project-portal-card anim-scale" style="background: linear-gradient(135deg, rgba(10, 14, 20, 0.7) 0%, rgba(16, 23, 33, 0.9) 100%); border: 1px solid var(--border-cyan); border-radius: var(--radius); padding: 3rem 2rem; box-shadow: var(--shadow-cyan); text-align: center; max-width: 900px; margin: 0 auto; position: relative; overflow: hidden; backdrop-filter: blur(8px);">
+            <!-- Subtle background glows -->
+            <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(0, 229, 255, 0.15) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
+            <div style="position: absolute; bottom: -50px; left: -50px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(124, 111, 255, 0.1) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
+
+            <!-- Portal Status Badge -->
+            <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: var(--cyan-glow2); border: 1px solid var(--border-cyan); border-radius: 30px; padding: 0.4rem 1rem; margin-bottom: 1.5rem; font-size: 0.8rem; font-weight: 700; color: var(--cyan); letter-spacing: 0.05em; text-transform: uppercase;">
+                <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--cyan); border-radius: 50%; box-shadow: 0 0 8px var(--cyan);"></span>
+                Centralized Project Registry Active
+            </div>
+
+            <h3 style="font-size: 2rem; font-weight: 800; color: var(--text-bright); margin: 0 0 1rem 0; letter-spacing: -0.03em; line-height: 1.2;">
+                My Projects Have Moved to <span style="color: var(--cyan); text-shadow: 0 0 15px rgba(0, 229, 255, 0.3);">labs.jhersonaguto.dev</span>
+            </h3>
+
+            <p style="color: var(--text); font-size: 1.05rem; line-height: 1.8; max-width: 680px; margin: 0 auto 2.5rem auto;">
+                To demonstrate a modern API-driven architecture, all my live projects, background microservices, and experiments are hosted dynamically inside my experimental workspace subdomain.
+            </p>
+
+            <!-- Workspace Features Preview Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; max-width: 760px; margin: 0 auto 2.5rem auto; text-align: left;">
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 1.25rem; transition: border-color var(--transition);">
+                    <div style="font-size: 1.25rem; margin-bottom: 0.5rem;">⚙️</div>
+                    <h4 style="color: var(--text-bright); margin: 0 0 0.25rem 0; font-size: 0.95rem;">API-First Catalog</h4>
+                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0; line-height: 1.4;">Project details are fetched in real-time from a Go Fiber REST API.</p>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 1.25rem; transition: border-color var(--transition);">
+                    <div style="font-size: 1.25rem; margin-bottom: 0.5rem;">⚡</div>
+                    <h4 style="color: var(--text-bright); margin: 0 0 0.25rem 0; font-size: 0.95rem;">Live Playgrounds</h4>
+                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0; line-height: 1.4;">Launch, test, and interact with live experiments immediately.</p>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 1.25rem; transition: border-color var(--transition);">
+                    <div style="font-size: 1.25rem; margin-bottom: 0.5rem;">📂</div>
+                    <h4 style="color: var(--text-bright); margin: 0 0 0.25rem 0; font-size: 0.95rem;">Architectural Specs</h4>
+                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0; line-height: 1.4;">Every project showcases its tech stack, live URLs, and GitHub repos.</p>
+                </div>
+            </div>
+
+            <!-- CTA Actions -->
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="https://labs.jhersonaguto.dev" target="_blank" rel="noopener noreferrer" class="btn-primary" style="text-decoration: none; padding: 0.9rem 2.2rem; font-size: 1rem; display: inline-flex; align-items: center; gap: 0.6rem; box-shadow: 0 8px 20px var(--cyan-glow);">
+                    Explore My Labs Workspace
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform var(--transition);">
+                        <line x1="7" y1="17" x2="17" y2="7"></line>
+                        <polyline points="7 7 17 7 17 17"></polyline>
+                    </svg>
+                </a>
+            </div>
         </div>
     </div>
 </section>

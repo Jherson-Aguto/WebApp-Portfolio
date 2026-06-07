@@ -1,95 +1,55 @@
 @page "/admin/projects"
 @layout AdminLayout
 @rendermode InteractiveServer
-@inject ContentService Svc
 
-<PageTitle>Manage Projects</PageTitle>
-<h1>Projects</h1>
+<PageTitle>Manage Projects (API-First)</PageTitle>
 
-<button class="btn-primary" @onclick="AddNew">+ Add Project</button>
-
-@if (editing is not null)
-{
-    <div class="edit-form">
-        <h3>@(editing.Id == 0 ? "New" : "Edit") Project</h3>
-        <EditForm Model="editing" OnValidSubmit="Save">
-            <DataAnnotationsValidator />
-            <div class="form-group">
-                <label>Title</label>
-                <InputText @bind-Value="editing.Title" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <InputTextArea @bind-Value="editing.Description" class="form-control" rows="3" />
-            </div>
-            <div class="form-group">
-                <label>Tech Stack</label>
-                <InputText @bind-Value="editing.TechStack" class="form-control" placeholder="e.g. Blazor, EF Core, PostgreSQL" />
-            </div>
-            <div class="form-group">
-                <label>Live URL (optional)</label>
-                <InputText @bind-Value="editing.LiveUrl" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label>Repo URL (optional)</label>
-                <InputText @bind-Value="editing.RepoUrl" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label>Sort Order</label>
-                <InputNumber @bind-Value="editing.SortOrder" class="form-control" />
-            </div>
-            <button type="submit" class="btn-primary">Save</button>
-            <button type="button" class="btn-secondary" @onclick="Cancel">Cancel</button>
-        </EditForm>
+<div class="contact-card" style="padding: 2.5rem; text-align: left; border: 1px solid var(--border-cyan); box-shadow: var(--shadow-cyan); margin-top: 1rem; border-radius: var(--radius);">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+        <span style="font-size: 2rem; filter: drop-shadow(0 0 8px var(--cyan-glow));">🌐</span>
+        <h2 style="margin: 0; font-size: 1.5rem; color: var(--text-bright);">API-First Project Registry</h2>
     </div>
-}
 
-<div class="admin-table-wrap">
-<table class="admin-table">
-    <thead>
-        <tr><th>Title</th><th>Tech Stack</th><th>Actions</th></tr>
-    </thead>
-    <tbody>
-        @foreach (var proj in items)
-        {
-            <tr>
-                <td>@proj.Title</td>
-                <td>@proj.TechStack</td>
-                <td>
-                    <button class="btn-sm" @onclick="() => Edit(proj)">Edit</button>
-                    <button class="btn-sm danger" @onclick="() => Delete(proj.Id)">Delete</button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <p style="line-height: 1.75; color: var(--text); font-size: 1rem; margin-bottom: 1.5rem;">
+        Project metadata is now fully decoupled from this CMS and is served dynamically by the <strong>Lab Registry API</strong> microservice at <a href="https://labs.jhersonaguto.dev" target="_blank" rel="noopener noreferrer" style="color: var(--cyan); text-decoration: underline;">labs.jhersonaguto.dev</a>.
+    </p>
+
+    <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1.5rem; margin-bottom: 2rem;">
+        <h4 style="margin: 0 0 1rem 0; color: var(--text-bright); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em;">Registry API Endpoints</h4>
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.8rem; font-family: monospace; font-size: 0.9rem;">
+            <li style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                <span><strong style="color: var(--cyan);">GET</strong> /api/labs/projects</span>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">Retrieve active project cards (Public)</span>
+            </li>
+            <li style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                <span><strong style="color: var(--cyan);">GET</strong> /api/labs/projects/{slug}</span>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">Retrieve single project card (Public)</span>
+            </li>
+            <li style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                <span><strong style="color: #ffb300;">POST</strong> /api/labs/projects</span>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">Register a new lab experiment (Protected)</span>
+            </li>
+            <li style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                <span><strong style="color: #ffb300;">PUT</strong> /api/labs/projects/{id}</span>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">Update registered project metadata (Protected)</span>
+            </li>
+            <li style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                <span><strong style="color: #ff5252;">DELETE</strong> /api/labs/projects/{id}</span>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">Remove project from the registry (Protected)</span>
+            </li>
+        </ul>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+        <span style="font-size: 0.85rem; color: var(--text-muted);">
+            Active Registry Subsystem: <code style="color: var(--cyan); background: var(--dark2); padding: 0.15rem 0.4rem; border-radius: 4px;">Go Fiber / GORM SQLite</code>
+        </span>
+        <a href="https://labs.jhersonaguto.dev" target="_blank" rel="noopener noreferrer" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+            Visit Labs Workspace
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="7" y1="17" x2="17" y2="7"></line>
+                <polyline points="7 7 17 7 17 17"></polyline>
+            </svg>
+        </a>
+    </div>
 </div>
-
-@code {
-    List<Project> items = [];
-    Project? editing;
-
-    protected override async Task OnInitializedAsync() => await Load();
-    async Task Load() => items = await Svc.GetProjectsAsync();
-
-    void AddNew() => editing = new();
-    void Edit(Project p) => editing = new Project
-    {
-        Id = p.Id, Title = p.Title, Description = p.Description,
-        TechStack = p.TechStack, LiveUrl = p.LiveUrl, RepoUrl = p.RepoUrl, SortOrder = p.SortOrder
-    };
-    void Cancel() => editing = null;
-
-    async Task Save()
-    {
-        await Svc.SaveProjectAsync(editing!);
-        editing = null;
-        await Load();
-    }
-
-    async Task Delete(int id)
-    {
-        await Svc.DeleteProjectAsync(id);
-        await Load();
-    }
-}

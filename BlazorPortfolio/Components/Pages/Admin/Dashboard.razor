@@ -16,10 +16,6 @@
         <span class="stat-num">@skillCount</span>
         <span>Skills</span>
     </div>
-    <div class="stat-card">
-        <span class="stat-num">@projCount</span>
-        <span>Projects</span>
-    </div>
     <div class="stat-card highlight">
         <span class="stat-num">@unreadCount</span>
         <span>Unread Messages</span>
@@ -29,13 +25,12 @@
 <p style="margin-top:2rem">Use the sidebar to manage your portfolio content.</p>
 
 @code {
-    int expCount, skillCount, projCount, unreadCount;
+    int expCount, skillCount, unreadCount;
 
     protected override async Task OnInitializedAsync()
     {
         expCount = (await Svc.GetExperiencesAsync()).Count;
         skillCount = (await Svc.GetSkillsAsync()).Count;
-        projCount = (await Svc.GetProjectsAsync()).Count;
         unreadCount = (await Svc.GetMessagesAsync()).Count(m => !m.IsRead);
     }
 }
