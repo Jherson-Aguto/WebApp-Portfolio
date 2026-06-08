@@ -21,6 +21,7 @@ public class LabsProjectDto
     public string? RepositoryUrl { get; set; }
     public string? DemoUrl { get; set; }
     public bool Featured { get; set; }
+    public int SortOrder { get; set; }
     public string PublishedAt { get; set; } = string.Empty;
     public string UpdatedAt { get; set; } = string.Empty;
 }

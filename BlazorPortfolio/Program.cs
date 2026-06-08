@@ -382,6 +382,7 @@ app.MapGet("/api/labs/projects", async (BlazorPortfolio.Services.ContentService 
             RepositoryUrl = p.RepositoryUrl,
             DemoUrl = p.DemoUrl,
             Featured = p.Featured,
+            SortOrder = p.SortOrder,
             PublishedAt = p.PublishedAt.ToString("yyyy-MM-ddTHH:mm:ssZ"),
             UpdatedAt = p.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")
         }).ToList();
@@ -415,6 +416,7 @@ app.MapGet("/api/labs/projects/{slug}", async (string slug, BlazorPortfolio.Serv
         RepositoryUrl = p.RepositoryUrl,
         DemoUrl = p.DemoUrl,
         Featured = p.Featured,
+        SortOrder = p.SortOrder,
         PublishedAt = p.PublishedAt.ToString("yyyy-MM-ddTHH:mm:ssZ"),
         UpdatedAt = p.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")
     };
