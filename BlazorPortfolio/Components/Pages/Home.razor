@@ -618,7 +618,7 @@
         if (projects is not null)
         {
             projectViewModels = projects.Select(p => new ProjectViewModel(
-                p.Id, p.Title, p.Description, p.TechStack, p.LiveUrl, p.RepoUrl, DetermineIconName(p)
+                p.Id, p.Title, p.ShortDescription, p.TechStack ?? "", p.LiveUrl, p.RepositoryUrl, DetermineIconName(p)
             )).ToList();
         }
 

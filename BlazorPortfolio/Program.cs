@@ -70,12 +70,12 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(opts =>
 // Server-side memory cache (replaces JS sessionStorage cache)
 builder.Services.AddMemoryCache();
 
-// Register secure CORS policy for our public static resume subdomain
+// Register secure CORS policy for our public static resume subdomain and labs portal
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowResumeSubdomain", policy =>
     {
-        policy.WithOrigins("https://resume.jhersonaguto.dev", "http://localhost:5173", "http://localhost:3000", "http://localhost:8080", "https://jhersonaguto.dev")
+        policy.WithOrigins("https://resume.jhersonaguto.dev", "https://labs.jhersonaguto.dev", "http://localhost:5173", "http://localhost:3000", "http://localhost:8080", "https://jhersonaguto.dev")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -235,6 +235,67 @@ if (!isTesting)
             });
             await db.SaveChangesAsync();
         }
+
+        // Correct any legacy project data shifted during column renaming
+        try
+        {
+            var projectsToFix = await db.Projects.ToListAsync();
+            bool dbChanged = false;
+            foreach (var proj in projectsToFix)
+            {
+                bool modified = false;
+
+                // 1. If status is a description (i.e. not a standard short status string)
+                if (proj.Status != "Live" && proj.Status != "Active" && proj.Status != "Prototype" && proj.Status != "Archived")
+                {
+                    proj.DetailedDescription = proj.Status;
+                    proj.ShortDescription = proj.Status.Length > 150 ? proj.Status.Substring(0, 147) + "..." : proj.Status;
+                    proj.Status = "Prototype";
+                    modified = true;
+                }
+
+                // 2. Ensure Category is not empty
+                if (string.IsNullOrWhiteSpace(proj.Category) || proj.Category == "-- Select Category --")
+                {
+                    proj.Category = "Other";
+                    modified = true;
+                }
+
+                // 3. Ensure Slug is a valid generated slug
+                if (string.IsNullOrWhiteSpace(proj.Slug) || proj.Slug.StartsWith("project-"))
+                {
+                    var baseSlug = proj.Title.ToLowerInvariant();
+                    baseSlug = Regex.Replace(baseSlug, @"[^a-z0-9\s-]", "");
+                    baseSlug = Regex.Replace(baseSlug, @"[\s-]+", "-").Trim('-');
+                    proj.Slug = baseSlug;
+                    modified = true;
+                }
+
+                // 4. Correct RepositoryUrl if it ended up in SolutionOverview
+                if (string.IsNullOrWhiteSpace(proj.RepositoryUrl) && !string.IsNullOrWhiteSpace(proj.SolutionOverview) && 
+                    (proj.SolutionOverview.Contains("github.com") || proj.SolutionOverview.StartsWith("http")))
+                {
+                    proj.RepositoryUrl = proj.SolutionOverview;
+                    proj.SolutionOverview = null;
+                    modified = true;
+                }
+
+                if (modified)
+                {
+                    db.Projects.Update(proj);
+                    dbChanged = true;
+                }
+            }
+            if (dbChanged)
+            {
+                await db.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Error occurred during projects data migration correction.");
+        }
     }
 }
 
@@ -290,6 +351,74 @@ app.MapGet("/api/resume/active", async (BlazorPortfolio.Services.ContentService 
     }
 
     return Results.Ok(new { fileUrl });
+}).RequireCors("AllowResumeSubdomain");
+
+// Public API endpoints for the Labs Workspace registry catalog
+app.MapGet("/api/labs/projects", async (BlazorPortfolio.Services.ContentService svc) =>
+{
+    var projects = await svc.GetProjectsAsync();
+    var response = projects
+        .Where(p => p.IsPublished)
+        .OrderBy(p => p.SortOrder)
+        .Select(p => new LabsProjectDto
+        {
+            Id = p.Id,
+            Title = p.Title,
+            Slug = p.Slug,
+            ShortDescription = p.ShortDescription,
+            DetailedDescription = p.DetailedDescription,
+            ProblemStatement = p.ProblemStatement,
+            SolutionOverview = p.SolutionOverview,
+            KeyFeatures = string.IsNullOrWhiteSpace(p.KeyFeatures) 
+                ? new List<string>() 
+                : p.KeyFeatures.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
+            TechStack = string.IsNullOrWhiteSpace(p.TechStack) 
+                ? new List<string>() 
+                : p.TechStack.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
+            Category = p.Category,
+            Status = p.Status,
+            ImageUrl = p.ImageUrl,
+            LiveUrl = p.LiveUrl,
+            RepositoryUrl = p.RepositoryUrl,
+            DemoUrl = p.DemoUrl,
+            Featured = p.Featured,
+            PublishedAt = p.PublishedAt.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+            UpdatedAt = p.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")
+        }).ToList();
+    return Results.Ok(response);
+}).RequireCors("AllowResumeSubdomain");
+
+app.MapGet("/api/labs/projects/{slug}", async (string slug, BlazorPortfolio.Services.ContentService svc) =>
+{
+    var p = await svc.GetProjectBySlugAsync(slug);
+    if (p == null || !p.IsPublished) return Results.NotFound();
+
+    var response = new LabsProjectDto
+    {
+        Id = p.Id,
+        Title = p.Title,
+        Slug = p.Slug,
+        ShortDescription = p.ShortDescription,
+        DetailedDescription = p.DetailedDescription,
+        ProblemStatement = p.ProblemStatement,
+        SolutionOverview = p.SolutionOverview,
+        KeyFeatures = string.IsNullOrWhiteSpace(p.KeyFeatures) 
+            ? new List<string>() 
+            : p.KeyFeatures.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
+        TechStack = string.IsNullOrWhiteSpace(p.TechStack) 
+            ? new List<string>() 
+            : p.TechStack.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
+        Category = p.Category,
+        Status = p.Status,
+        ImageUrl = p.ImageUrl,
+        LiveUrl = p.LiveUrl,
+        RepositoryUrl = p.RepositoryUrl,
+        DemoUrl = p.DemoUrl,
+        Featured = p.Featured,
+        PublishedAt = p.PublishedAt.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+        UpdatedAt = p.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")
+    };
+    return Results.Ok(response);
 }).RequireCors("AllowResumeSubdomain");
 
 app.MapGet("/health", () => Results.Ok("OK"));

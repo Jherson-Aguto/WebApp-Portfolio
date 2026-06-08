@@ -63,18 +63,40 @@ public class ContentService(
         return await db.Projects.OrderBy(p => p.SortOrder).ToListAsync();
     }
 
+    public async Task<Project?> GetProjectBySlugAsync(string slug)
+    {
+        await using var db = await factory.CreateDbContextAsync();
+        return await db.Projects.FirstOrDefaultAsync(p => p.Slug == slug);
+    }
+
+    public async Task<bool> IsSlugUniqueAsync(string slug, int excludeId)
+    {
+        await using var db = await factory.CreateDbContextAsync();
+        return !await db.Projects.AnyAsync(p => p.Slug == slug && p.Id != excludeId);
+    }
+
     public async Task SaveProjectAsync(Project project)
     {
         await using var db = await factory.CreateDbContextAsync();
-        if (project.Id == 0) db.Projects.Add(project);
-        else db.Projects.Update(project);
+        project.UpdatedAt = DateTime.UtcNow;
+        if (project.Id == 0)
+        {
+            project.PublishedAt = DateTime.UtcNow;
+            db.Projects.Add(project);
+        }
+        else
+        {
+            db.Projects.Update(project);
+        }
         await db.SaveChangesAsync();
+        cache.Remove(CacheService.Keys.Projects);
     }
 
     public async Task DeleteProjectAsync(int id)
     {
         await using var db = await factory.CreateDbContextAsync();
         await db.Projects.Where(p => p.Id == id).ExecuteDeleteAsync();
+        cache.Remove(CacheService.Keys.Projects);
     }
 
     // ── Site Profile ──────────────────────────────────────────────────────────
